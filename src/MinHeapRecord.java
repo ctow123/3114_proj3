@@ -4,13 +4,14 @@ public class MinHeapRecord {
     private int size;
     private int maxsize;
     private int specialinsert;
-
+    private int realsize;
     private static final int FRONT = 1;
 
 
     public MinHeapRecord(int maxsize) {
         this.maxsize = maxsize;
         this.size = 0;
+        this.realsize = 0;
         this.specialinsert = maxsize;
         Heap = new Record[this.maxsize + 1];
         Heap[0] = new Record(Integer.MIN_VALUE, Integer.MIN_VALUE);
@@ -92,7 +93,7 @@ public class MinHeapRecord {
         if (size < maxsize && size < specialinsert) {
             Heap[++size] = element;
             int current = size;
-
+            realsize++;
             while (Heap[current].getKey() < Heap[parent(current)].getKey()) {
                 swap(current, parent(current));
                 current = parent(current);
@@ -147,8 +148,19 @@ public class MinHeapRecord {
         Heap[FRONT] = Heap[size];
         Heap[size] = new Record(0, 0);
         size--;
+        realsize--;
         minHeapify(FRONT);
         return popped;
+    }
+
+
+    public Record peek() {
+        if (size > 0) {
+            return Heap[FRONT];
+        }
+        else {
+            return null;
+        }
     }
 
 
@@ -174,12 +186,10 @@ public class MinHeapRecord {
 
     // MY CODE
     public boolean specialInsert(Record element) {
-        if (specialinsert > size) {
-            Record temp = Heap[specialinsert];
+        if (specialinsert > size && specialinsert > 0) {
+            // Record temp = Heap[specialinsert];
             Heap[specialinsert] = element;
-            if (temp == null || temp.getKey() != 0) {
-                this.insert(temp);
-            }
+            realsize++;
             specialinsert--;
             return true;
         }
@@ -197,6 +207,39 @@ public class MinHeapRecord {
 
     public int getSpecialInsert() {
         return specialinsert;
+    }
+
+
+    public boolean isFull() {
+        if (size == maxsize) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+
+    public int size() {
+        return size;
+    }
+
+
+    public int maxsize() {
+        return maxsize;
+    }
+
+
+    public void setSpecialInsert(int x) {
+        specialinsert = x;
+    }
+    public void setRealSize(int x) {
+        realsize = x;
+    }
+
+
+    public int realsize() {
+        return realsize;
     }
 
 }

@@ -38,6 +38,11 @@ import java.util.*;
  */
 public class Externalsort {
     private static final int BUFFER_SIZE = 0;
+    private static Buffer inputbuf;
+    private static int count;
+    private static int filesize;
+    private static RandomAccessFile data;
+    private static LinkedList<Integer> runs;
 
 
     // use priority queue for min heap java class
@@ -52,8 +57,11 @@ public class Externalsort {
      */
     public static void main(String[] args) throws IOException {
         // Reads in command line argument
+        runs = new LinkedList();
+        data = new RandomAccessFile("sampleInput16.bin", "r");
         InputStream inputStream = new BufferedInputStream(new FileInputStream(
             "sampleInput16.bin"), 8192);
+        filesize = inputStream.available() / 16;
         OutputStream outputStream = new BufferedOutputStream(
             new FileOutputStream("output.bin"));
         // print writer uses plain text
@@ -64,15 +72,17 @@ public class Externalsort {
         // 1024, 8192, priorityqueue in java is minheap
         Record[] inputbufarray = new Record[512];
         Record[] outputbufarray = new Record[512];
+        inputbuf = new Buffer(512);
+        Buffer outputbuf = new Buffer(512);
         MinHeapRecord heaparray = new MinHeapRecord(4096);
-        RandomAccessFile data = new RandomAccessFile("sampleInput16.bin", "r");
-        
+
         System.out.print(data.length() + " \n");
         // building initial , need to loop eventually
         // makes the runs
         // then worry about merge sort
         byte[] eight = new byte[8];
-        for (long i = 0, len = data.length() / 16; i < len; i++) {
+        count = 0;
+        while (!heaparray.isFull() && count < (data.length() / 16)) {
             data.readFully(eight);
             ByteBuffer bb = ByteBuffer.wrap(eight);
             long l = bb.getLong();
@@ -80,40 +90,54 @@ public class Externalsort {
             data.readFully(eight);
             bb = ByteBuffer.wrap(eight);
             double l2 = bb.getDouble();
-            if (i <= 4096) {
-                heaparray.insert(new Record(l, l2));
-                // heaparray1.add(new Record(l, l2));
-
+            if (count == 4095) {
+                System.out.println(l2);
             }
-            if (i >= 4096 && i < 4096 + 512) {
-                inputbufarray[(int)(i - 4096)] = new Record(l, l2);
-            }
-        }
-        for (int j = 0; j < 4096; j++) {
+            heaparray.insert(new Record(l, l2));
 
+            count++;
         }
+        // data.seek(filesize*16-8);
+        // if count == 4096 then seek 4096*16
+        data.readFully(eight);
+        ByteBuffer bb = ByteBuffer.wrap(eight);
+        System.out.println(bb.getDouble());
+        System.out.println(count);
+        Externalsort.fillBuffer(count);
+// for (long i = 0, len = data.length() / 16; i < len; i++) {
+// data.readFully(eight);
+// ByteBuffer bb = ByteBuffer.wrap(eight);
+// long l = bb.getLong();
+//
+// data.readFully(eight);
+// bb = ByteBuffer.wrap(eight);
+// double l2 = bb.getDouble();
+// if (i <= 4096) {
+// System.out.println(l2);
+// //heaparray.insert(new Record(l, l2));
+// // heaparray1.add(new Record(l, l2));
+//
+// }
+// }
+
         // this converts double to bytes and writes to buffered output stream,
         // if writing to dataoutputstream default is bytes
         byte[] bytes = new byte[8];
         ByteBuffer.wrap(bytes).putDouble((heaparray.mainHeap()[(int)(8)]
             .getKey()));
         outputStream.write(bytes);
+        // MAINLOOP
 
-        // heaparray.print();
-        System.out.println(inputbufarray[(int)(511)].getKey());
+        while (count < filesize) {
+            Externalsort.buildRuns(inputbuf, outputbuf, heaparray);
+        }
 
         // begin buildling the runs
-        for (int k = 0; k < 512; k++) {
-            Record temp = heaparray.remove();
-            outputStreamtxt.write(Double.toString((temp.getKey())));
-            outputStreamtxt.write("\n");
-            heaparray.insert(inputbufarray[(int)k]);
-            
 
-        }
+        // need buffer fill fcn, comparisons happen here
+        // if special insert is zero then, top number is less than bottom
+
         System.out.println(heaparray.getSpecialInsert());
-        // need buffer fill fcn
-        
         // need buffer dump fcn
 
         // merge
@@ -123,4 +147,96 @@ public class Externalsort {
         outputStreamtxt.close();
     }
 
+
+    public static void fillBuffer(int fileplace) throws IOException {
+        byte[] eight = new byte[8];
+        data.seek(fileplace * 16);
+        while (!inputbuf.isFull() && count < filesize) {
+
+            data.readFully(eight);
+            ByteBuffer bb = ByteBuffer.wrap(eight);
+            long l = bb.getLong();
+
+            data.readFully(eight);
+            bb = ByteBuffer.wrap(eight);
+            double l2 = bb.getDouble();
+            inputbuf.insert(new Record(l, l2));
+
+            count++;
+        }
+        System.out.println("filled" + count);
+    }
+
+
+    public static void reorderHeap(MinHeapRecord heap) {
+        heap.getSpecialInsert();
+        while (heap.getSpecialInsert() < heap.maxsize()) {
+            heap.insert(heap.mainHeap()[heap.getSpecialInsert() + 1]);
+            heap.setSpecialInsert(heap.getSpecialInsert() + 1);
+            heap.setRealSize(heap.realsize() - 1);
+        }
+    }
+
+
+    public static void buildRuns(
+        Buffer inputbuf,
+        Buffer outputbuf,
+        MinHeapRecord heaparray)
+        throws IOException {
+        int fakecount = 1;
+        while (heaparray.realsize() > 0) {
+            while (heaparray.getSpecialInsert() != 0 && heaparray.size() > 0) {
+                if (outputbuf.isFull()) {
+                    outputbuf.dumpBuffer("hey");
+                    System.out.println("dump " + count);
+                }
+
+                else {
+                    // if equals shouldn't matter
+                    if (!inputbuf.isEmpty()) {
+                        if (outputbuf.isEmpty()) {
+                            outputbuf.insert(heaparray.remove());
+                            fakecount++;
+                            if (inputbuf.peek().getKey() > outputbuf.peek()
+                                .getKey()) {
+                                heaparray.insert(inputbuf.getRecord());
+                            }
+                            else {
+                                heaparray.specialInsert(inputbuf.getRecord());
+                            }
+                        }
+
+                        outputbuf.insert(heaparray.remove());
+                        fakecount++;
+                        if (inputbuf.peek().getKey() > outputbuf.peek()
+                            .getKey()) {
+                            heaparray.insert(inputbuf.getRecord());
+                        }
+                        else {
+                            heaparray.specialInsert(inputbuf.getRecord());
+                        }
+                    }
+                    else if (count < filesize) {
+                        Externalsort.fillBuffer(count);
+                    }
+                    else {
+                        if (outputbuf.peek() == null || heaparray.peek()
+                            .getKey() > outputbuf.peek().getKey()) {
+                            outputbuf.insert(heaparray.remove());
+                            fakecount++;
+                        }
+                        else {
+                            heaparray.specialInsert(heaparray.remove());
+                        }
+                    }
+                }
+
+            }
+            outputbuf.dumpBuffer("hey");
+            if (fakecount < filesize) {
+                runs.add(fakecount);
+            }
+            Externalsort.reorderHeap(heaparray);
+        }
+    }
 }
