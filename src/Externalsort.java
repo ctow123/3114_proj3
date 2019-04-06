@@ -59,7 +59,7 @@ public class Externalsort {
         // Reads in command line argument args[0]
         runs = new LinkedList();
         data = new RandomAccessFile(args[0], "r");
-        //System.out.println("avaible " + data.length());
+        // System.out.println("avaible " + data.length());
         filesize = (int)(data.length() / 16);
 // if(data.exists()){
 // data.delete();
@@ -108,7 +108,7 @@ public class Externalsort {
 // ByteBuffer bb = ByteBuffer.wrap(eight);
 // System.out.println(bb.getDouble());
 // System.out.println(count);
-        Externalsort.fillBuffer(count);
+        Externalsort.fillBuffer(count, inputbuf);
 
         // MAINLOOP
 
@@ -123,10 +123,9 @@ public class Externalsort {
         if (f2.exists()) {
             f2.delete();
         }
-        // passes 
+        // initial runs
         int merge = runs.size();
 
-        
         int[] mergearray = new int[merge + 2];
         int[] mergearraycopy = new int[merge + 2];
 
@@ -138,17 +137,82 @@ public class Externalsort {
         }
         mergearray[i + 1] = filesize;
         mergearraycopy[i + 1] = filesize;
+        runs.clear();
         int count = 0;
-        
-        if(merge > 8) {
+        int pass = 0;
+
+        // passes
+        if (merge > 8) {
+            // sort 8 runs at a time, use merge 7
+            File f3 = new File("runs2.bin");
+            if (f3.exists()) {
+                f3.delete();
+            }
+            int offset = 0;
+            while (merge > 8) {
+                int[] partialmerge = new int[9];
+                int[] partialmergecopy = new int[9];
+                int mi = 0;
+                while (mi < 9) {
+                    partialmerge[mi] = mergearray[mi + (8 * offset)];
+                    partialmergecopy[mi] = mergearray[mi + (8 * offset)];
+                    mi++;
+                }
+                // if file exists delete before writing
+                String load = "runs.bin";
+                String store = "runs2.bin";
+
+                Externalsort.mergeRuns(inputbuf, outputbuf, heaparray,
+                    partialmerge, partialmergecopy, 7, load, store);
+                merge = merge - 8;
+                offset++;
+                // new runs
+                runs.add(mergearray[offset*8]);
+                
+            }
+            // cases where 2 runs left after iternations of 8 runs, use args[0]
+            // as store
+            int[] partialmerge = new int[merge + 2];
+            int[] partialmergecopy = new int[merge + 2];
+            int mi = 0;
+            while (mi < merge+1) {
+                partialmerge[mi] = mergearray[mi + (8 * offset)];
+                partialmergecopy[mi] = mergearray[mi + (8 * offset)];
+                mi++;
+            }
+            partialmerge[mi] = filesize;
+            partialmergecopy[mi] = filesize;
+            String load;
+            String store;
+
+            load = "runs.bin";
+            store = "runs2.bin";
+
+            Externalsort.mergeRuns(inputbuf, outputbuf, heaparray, partialmerge,
+                partialmergecopy, merge, load, store);
+            // sorting 2 runs after >8 run merge
+            merge = runs.size();
+
+
+            i = 0;
+            while (i < merge) {
+                mergearray[i + 1] = runs.get(i);
+                mergearraycopy[i + 1] = runs.get(i);
+                i++;
+            }
+            mergearray[i + 1] = filesize;
+            mergearraycopy[i + 1] = filesize;
+            runs.clear();
+            Externalsort.mergeRuns(inputbuf, outputbuf, heaparray, mergearray,
+                mergearraycopy, merge, "runs2.bin", args[0]);
             
         }
         else {
-            Externalsort.mergeRuns(inputbuf, outputbuf, heaparray, mergearray, mergearraycopy, merge, args[0]);
+
+            // may need a delete in file store, in file load?
+            Externalsort.mergeRuns(inputbuf, outputbuf, heaparray, mergearray,
+                mergearraycopy, merge, "runs.bin", args[0]);
         }
-        
-        
-        
 
         // merge
         data.close();
@@ -192,6 +256,7 @@ public class Externalsort {
 
 
     public static void loadRunData(
+        String file,
         int fileplace,
         int amount,
         int run,
@@ -199,8 +264,8 @@ public class Externalsort {
         throws IOException {
         byte[] eight = new byte[8];
         // read from not OG file but new one
-        RandomAccessFile data2 = new RandomAccessFile("runs.bin", "r");
-        // System.out.println(data2.length());
+        RandomAccessFile data2 = new RandomAccessFile(file, "r");
+        //System.out.println(file + data2.length());
         data2.seek(fileplace * 16);
         int counter = 0;
         while (counter < amount) {
@@ -221,7 +286,7 @@ public class Externalsort {
     }
 
 
-    public static void fillBuffer(int fileplace) throws IOException {
+    public static void fillBuffer(int fileplace, Buffer inputbuf) throws IOException {
         byte[] eight = new byte[8];
         data.seek(fileplace * 16);
         while (!inputbuf.isFull() && count < filesize) {
@@ -299,7 +364,7 @@ public class Externalsort {
                         }
                     }
                     else if (count < filesize) {
-                        Externalsort.fillBuffer(count);
+                        Externalsort.fillBuffer(count, inputbuf);
                     }
                     else {
                         if (outputbuf.peek() == null || heaparray.peek()
@@ -328,24 +393,29 @@ public class Externalsort {
         Buffer inputbuf,
         Buffer outputbuf,
         MinHeapRecord heaparray,
-        int[] mergearray, int[] mergearraycopy, int merge, String file)
+        int[] mergearray,
+        int[] mergearraycopy,
+        int merge,
+        String fileload,
+        String filestore)
         throws IOException {
-     // multiway merge, this needs to be false
+        // multiway merge, this needs to be false
+        int count = 0;
         while (!Externalsort.mergeDone(mergearray, mergearraycopy, merge + 1)) {
 
             // initial load, once
             while (count <= merge) {
                 int amount = Externalsort.calcMergeAmount(mergearray,
                     mergearraycopy, count);
-                Externalsort.loadRunData(mergearray[count], amount, count,
-                    heaparray);
+                Externalsort.loadRunData(fileload, mergearray[count], amount,
+                    count, heaparray);
                 mergearray[count] = mergearray[count] + amount;
                 count++;
             }
             // load when empty
 
             if (outputbuf.isFull()) {
-                outputbuf.dumpBuffer("output.txt", file);
+                outputbuf.dumpBuffer("output.txt", filestore);
             }
             // check runs
             int runcount = 0;
@@ -354,8 +424,8 @@ public class Externalsort {
                 if (heaparray.isRunEmpty(runcount)) {
                     int amount = Externalsort.calcMergeAmount(mergearray,
                         mergearraycopy, runcount);
-                    Externalsort.loadRunData(mergearray[runcount], amount,
-                        runcount, heaparray);
+                    Externalsort.loadRunData(fileload, mergearray[runcount],
+                        amount, runcount, heaparray);
                     mergearray[runcount] = mergearray[runcount] + amount;
                 }
                 runcount++;
@@ -367,21 +437,21 @@ public class Externalsort {
             outputbuf.insert(heaparray.runsMin(merge + 1));
         }
 
-        outputbuf.dumpBuffer("output.txt", file);
+        outputbuf.dumpBuffer("output.txt", filestore);
     }
 
 
     public static void buildOutput(String file) throws IOException {
         RandomAccessFile data3 = new RandomAccessFile(file, "r");
-        //System.out.println(data3.length());
+        // System.out.println(data3.length());
         int blocks = (int)data3.length() / 8192;
         byte[] eight = new byte[8];
-        for (int i = 1; i < blocks+1; i++) {
+        for (int i = 1; i < blocks + 1; i++) {
             if (i > 0) {
-                data3.seek((i-1) * 8192);
+                data3.seek((i - 1) * 8192);
             }
             else {
-                data3.seek((i-1) * 8192);
+                data3.seek((i - 1) * 8192);
             }
 
             data3.readFully(eight);

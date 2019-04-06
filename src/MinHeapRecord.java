@@ -225,7 +225,7 @@ public class MinHeapRecord {
     }
 
 
-    private int findEmptySpot(int startpos) {
+    public int findEmptySpot(int startpos) {
         int end = startpos + 512;
         int poscount = startpos;
         while (poscount < end) {
@@ -246,7 +246,7 @@ public class MinHeapRecord {
         int end = runnum * 512 + 513;
         int poscount = runnum * 512 + 1;
         while (poscount < end) {
-            if (Heap[poscount].getKey() == 0) {
+            if (Heap[poscount] == null || Heap[poscount].getKey() == 0) {
                 poscount++;
             }
             else {
@@ -313,7 +313,7 @@ public class MinHeapRecord {
 
 
     /**
-     * current position in the run
+     * current position in the run, the first key that isnt zero
      * 
      * @param run
      * @return
