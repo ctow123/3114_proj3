@@ -56,32 +56,40 @@ public class Externalsort {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
-        // Reads in command line argument
+        // Reads in command line argument args[0]
         runs = new LinkedList();
-        data = new RandomAccessFile("sampleInput16.bin", "r");
-        InputStream inputStream = new BufferedInputStream(new FileInputStream(
-            "sampleInput16.bin"), 8192);
-        filesize = inputStream.available() / 16;
-        OutputStream outputStream = new BufferedOutputStream(
-            new FileOutputStream("output.bin"));
-        // print writer uses plain text
-        PrintWriter outputStreamtxt = new PrintWriter("output.txt");
-        // dataoutput stream writes in binary
-        // Scanner file = new Scanner(new File(args[0]));
-        System.out.println("avaible " + inputStream.available());
-        // 1024, 8192, priorityqueue in java is minheap
-        Record[] inputbufarray = new Record[512];
-        Record[] outputbufarray = new Record[512];
+        data = new RandomAccessFile(args[0], "r");
+        //System.out.println("avaible " + data.length());
+        filesize = (int)(data.length() / 16);
+// if(data.exists()){
+// data.delete();
         inputbuf = new Buffer(512);
         Buffer outputbuf = new Buffer(512);
         MinHeapRecord heaparray = new MinHeapRecord(4096);
+        // bitbuffers
+        byte[] inputbytebuf = new byte[8192];
+        byte[] outputbytebuf = new byte[8192];
 
-        System.out.print(data.length() + " \n");
-        // building initial , need to loop eventually
-        // makes the runs
-        // then worry about merge sort
         byte[] eight = new byte[8];
         count = 0;
+        // printing everything to a file
+// FileWriter fw = new FileWriter("rawdata.txt", true);
+// while (count < (data.length() / 16)) {
+// data.readFully(eight);
+// ByteBuffer bb = ByteBuffer.wrap(eight);
+// long l = bb.getLong();
+//
+// data.readFully(eight);
+// bb = ByteBuffer.wrap(eight);
+// double l2 = bb.getDouble();
+//
+// fw.append(Long.toString(l) + " ");
+// fw.append(Double.toString(l2));
+// fw.append("\n");
+// count++;
+// }
+// fw.close();
+
         while (!heaparray.isFull() && count < (data.length() / 16)) {
             data.readFully(eight);
             ByteBuffer bb = ByteBuffer.wrap(eight);
@@ -90,61 +98,126 @@ public class Externalsort {
             data.readFully(eight);
             bb = ByteBuffer.wrap(eight);
             double l2 = bb.getDouble();
-            if (count == 4095) {
-                System.out.println(l2);
-            }
             heaparray.insert(new Record(l, l2));
 
             count++;
         }
         // data.seek(filesize*16-8);
         // if count == 4096 then seek 4096*16
-        data.readFully(eight);
-        ByteBuffer bb = ByteBuffer.wrap(eight);
-        System.out.println(bb.getDouble());
-        System.out.println(count);
-        Externalsort.fillBuffer(count);
-// for (long i = 0, len = data.length() / 16; i < len; i++) {
 // data.readFully(eight);
 // ByteBuffer bb = ByteBuffer.wrap(eight);
-// long l = bb.getLong();
-//
-// data.readFully(eight);
-// bb = ByteBuffer.wrap(eight);
-// double l2 = bb.getDouble();
-// if (i <= 4096) {
-// System.out.println(l2);
-// //heaparray.insert(new Record(l, l2));
-// // heaparray1.add(new Record(l, l2));
-//
-// }
-// }
+// System.out.println(bb.getDouble());
+// System.out.println(count);
+        Externalsort.fillBuffer(count);
 
-        // this converts double to bytes and writes to buffered output stream,
-        // if writing to dataoutputstream default is bytes
-        byte[] bytes = new byte[8];
-        ByteBuffer.wrap(bytes).putDouble((heaparray.mainHeap()[(int)(8)]
-            .getKey()));
-        outputStream.write(bytes);
         // MAINLOOP
 
-        while (count < filesize) {
-            Externalsort.buildRuns(inputbuf, outputbuf, heaparray);
+        // build runs
+        File f1 = new File("runs.bin");
+        if (f1.exists()) {
+            f1.delete();
         }
+        Externalsort.buildRuns(inputbuf, outputbuf, heaparray);
 
-        // begin buildling the runs
+        File f2 = new File(args[0]);
+        if (f2.exists()) {
+            f2.delete();
+        }
+        // passes 
+        int merge = runs.size();
 
-        // need buffer fill fcn, comparisons happen here
-        // if special insert is zero then, top number is less than bottom
+        
+        int[] mergearray = new int[merge + 2];
+        int[] mergearraycopy = new int[merge + 2];
 
-        System.out.println(heaparray.getSpecialInsert());
-        // need buffer dump fcn
+        int i = 0;
+        while (i < merge) {
+            mergearray[i + 1] = runs.get(i);
+            mergearraycopy[i + 1] = runs.get(i);
+            i++;
+        }
+        mergearray[i + 1] = filesize;
+        mergearraycopy[i + 1] = filesize;
+        int count = 0;
+        
+        if(merge > 8) {
+            
+        }
+        else {
+            Externalsort.mergeRuns(inputbuf, outputbuf, heaparray, mergearray, mergearraycopy, merge, args[0]);
+        }
+        
+        
+        
 
         // merge
+        data.close();
 
-        // close files
-        outputStream.close();
-        outputStreamtxt.close();
+        Externalsort.buildOutput(args[0]);
+    }
+
+
+    public static int calcMergeAmount(
+        int[] mergearray,
+        int[] mergearraycopy,
+        int target) {
+        int amount = mergearraycopy[target + 1] - mergearray[target];
+        if (amount >= 512) {
+            return 512;
+        }
+        else {
+            return amount;
+        }
+    }
+
+
+    public static boolean mergeDone(
+        int[] marray,
+        int[] marraycopy,
+        int length) {
+        int i = 0;
+        while (i < length) {
+            if (marray[i] == marraycopy[i + 1]) {
+                i++;
+            }
+            else {
+                return false;
+            }
+        }
+        if (i == length) {
+            return true;
+        }
+        return false;
+    }
+
+
+    public static void loadRunData(
+        int fileplace,
+        int amount,
+        int run,
+        MinHeapRecord heap)
+        throws IOException {
+        byte[] eight = new byte[8];
+        // read from not OG file but new one
+        RandomAccessFile data2 = new RandomAccessFile("runs.bin", "r");
+        // System.out.println(data2.length());
+        data2.seek(fileplace * 16);
+        int counter = 0;
+        while (counter < amount) {
+
+            data2.readFully(eight);
+            ByteBuffer bb = ByteBuffer.wrap(eight);
+            long l = bb.getLong();
+
+            data2.readFully(eight);
+            bb = ByteBuffer.wrap(eight);
+            double l2 = bb.getDouble();
+            heap.insertRegular(new Record(l, l2), run);
+
+            counter++;
+        }
+        // System.out.println("loaded run data" + counter);
+        data2.close();
     }
 
 
@@ -160,21 +233,29 @@ public class Externalsort {
             data.readFully(eight);
             bb = ByteBuffer.wrap(eight);
             double l2 = bb.getDouble();
+
             inputbuf.insert(new Record(l, l2));
 
             count++;
         }
-        System.out.println("filled" + count);
+        // System.out.println("filled" + count);
     }
 
 
     public static void reorderHeap(MinHeapRecord heap) {
         heap.getSpecialInsert();
         while (heap.getSpecialInsert() < heap.maxsize()) {
-            heap.insert(heap.mainHeap()[heap.getSpecialInsert() + 1]);
+            Record temp = heap.removeSpecial(heap.getSpecialInsert() + 1);
+
+            heap.insertReorder(temp);
             heap.setSpecialInsert(heap.getSpecialInsert() + 1);
-            heap.setRealSize(heap.realsize() - 1);
+            // heap.setRealSize(heap.realsize() - 1);
         }
+// while (heap.getSpecialInsert() < heap.maxsize()) {
+// heap.insert(heap.mainHeap()[heap.getSpecialInsert() + 1]);
+// heap.setSpecialInsert(heap.getSpecialInsert() + 1);
+// heap.setRealSize(heap.realsize() - 1);
+// }
     }
 
 
@@ -186,9 +267,10 @@ public class Externalsort {
         int fakecount = 1;
         while (heaparray.realsize() > 0) {
             while (heaparray.getSpecialInsert() != 0 && heaparray.size() > 0) {
+
                 if (outputbuf.isFull()) {
-                    outputbuf.dumpBuffer("hey");
-                    System.out.println("dump " + count);
+                    outputbuf.dumpBuffer("output.txt", "runs.bin");
+                    // System.out.println("dump " + count);
                 }
 
                 else {
@@ -232,11 +314,90 @@ public class Externalsort {
                 }
 
             }
-            outputbuf.dumpBuffer("hey");
+            outputbuf.dumpBuffer("output.txt", "runs.bin");
             if (fakecount < filesize) {
-                runs.add(fakecount);
+                runs.add(fakecount - 1);
             }
             Externalsort.reorderHeap(heaparray);
+
         }
     }
+
+
+    public static void mergeRuns(
+        Buffer inputbuf,
+        Buffer outputbuf,
+        MinHeapRecord heaparray,
+        int[] mergearray, int[] mergearraycopy, int merge, String file)
+        throws IOException {
+     // multiway merge, this needs to be false
+        while (!Externalsort.mergeDone(mergearray, mergearraycopy, merge + 1)) {
+
+            // initial load, once
+            while (count <= merge) {
+                int amount = Externalsort.calcMergeAmount(mergearray,
+                    mergearraycopy, count);
+                Externalsort.loadRunData(mergearray[count], amount, count,
+                    heaparray);
+                mergearray[count] = mergearray[count] + amount;
+                count++;
+            }
+            // load when empty
+
+            if (outputbuf.isFull()) {
+                outputbuf.dumpBuffer("output.txt", file);
+            }
+            // check runs
+            int runcount = 0;
+            while (runcount < merge + 1) {
+                // second condition is data left
+                if (heaparray.isRunEmpty(runcount)) {
+                    int amount = Externalsort.calcMergeAmount(mergearray,
+                        mergearraycopy, runcount);
+                    Externalsort.loadRunData(mergearray[runcount], amount,
+                        runcount, heaparray);
+                    mergearray[runcount] = mergearray[runcount] + amount;
+                }
+                runcount++;
+            }
+            outputbuf.insert(heaparray.runsMin(merge + 1));
+
+        }
+        while (heaparray.size() > 0) {
+            outputbuf.insert(heaparray.runsMin(merge + 1));
+        }
+
+        outputbuf.dumpBuffer("output.txt", file);
+    }
+
+
+    public static void buildOutput(String file) throws IOException {
+        RandomAccessFile data3 = new RandomAccessFile(file, "r");
+        //System.out.println(data3.length());
+        int blocks = (int)data3.length() / 8192;
+        byte[] eight = new byte[8];
+        for (int i = 1; i < blocks+1; i++) {
+            if (i > 0) {
+                data3.seek((i-1) * 8192);
+            }
+            else {
+                data3.seek((i-1) * 8192);
+            }
+
+            data3.readFully(eight);
+            ByteBuffer bb = ByteBuffer.wrap(eight);
+            long l = bb.getLong();
+
+            data3.readFully(eight);
+            bb = ByteBuffer.wrap(eight);
+            double l2 = bb.getDouble();
+            System.out.print(l + " " + l2 + " ");
+            if (i > 0 && i % 5 == 0) {
+                System.out.print("\n");
+            }
+        }
+        data3.close();
+
+    }
+
 }

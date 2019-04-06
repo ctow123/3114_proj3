@@ -1,4 +1,5 @@
 
+
 public class MinHeapRecord {
     private Record[] Heap;
     private int size;
@@ -21,14 +22,14 @@ public class MinHeapRecord {
     // Function to return the position of
     // the parent for the node currently
     // at pos
-    private int parent(int pos) {
+    public int parent(int pos) {
         return pos / 2;
     }
 
 
     // Function to return the position of the
     // left child for the node currently at pos
-    private int leftChild(int pos) {
+    public int leftChild(int pos) {
         return (2 * pos);
     }
 
@@ -36,15 +37,15 @@ public class MinHeapRecord {
     // Function to return the position of
     // the right child for the node currently
     // at pos
-    private int rightChild(int pos) {
+    public int rightChild(int pos) {
         return (2 * pos) + 1;
     }
 
 
     // Function that returns true if the passed
     // node is a leaf node
-    private boolean isLeaf(int pos) {
-        if (size > rightChild(pos) || size > leftChild(pos)) {
+    public boolean isLeaf(int pos) {
+        if (size >= rightChild(pos) || size >= leftChild(pos)) {
             return false;
         }
         return true;
@@ -66,24 +67,59 @@ public class MinHeapRecord {
         // If the node is a non-leaf node and greater
         // than any of its child
         if (!isLeaf(pos)) {
-            if (Heap[pos].getKey() > Heap[leftChild(pos)].getKey() || Heap[pos]
-                .getKey() > Heap[rightChild(pos)].getKey()) {
+            if(Heap[leftChild(pos)].getKey() != 0 && Heap[rightChild(pos)].getKey() != 0) {
+                if (Heap[pos].getKey() > Heap[leftChild(pos)].getKey() || Heap[pos]
+                    .getKey() > Heap[rightChild(pos)].getKey()) {
 
-                // Swap with the left child and heapify
-                // the left child
-                if (Heap[leftChild(pos)].getKey() < Heap[rightChild(pos)]
-                    .getKey()) {
-                    swap(pos, leftChild(pos));
-                    minHeapify(leftChild(pos));
-                }
+                    // Swap with the left child and heapify
+                    // the left child
+                    if (Heap[leftChild(pos)].getKey() < Heap[rightChild(pos)]
+                        .getKey()) {
+                        swap(pos, leftChild(pos));
+                        minHeapify(leftChild(pos));
+                    }
 
-                // Swap with the right child and heapify
-                // the right child
-                else {
-                    swap(pos, rightChild(pos));
-                    minHeapify(rightChild(pos));
+                    // Swap with the right child and heapify
+                    // the right child
+                    else {
+                        swap(pos, rightChild(pos));
+                        minHeapify(rightChild(pos));
+                    }
                 }
             }
+            else if(Heap[leftChild(pos)].getKey() != 0){
+                if (Heap[pos].getKey() > Heap[leftChild(pos)].getKey()) {
+                        swap(pos, leftChild(pos));
+                        minHeapify(leftChild(pos));
+                 
+                }
+            }
+            else {
+                if (Heap[pos].getKey() > Heap[rightChild(pos)].getKey()) {               
+                        swap(pos, rightChild(pos));
+                        minHeapify(rightChild(pos));      
+                }  
+            }
+            // OG code
+//            if (Heap[pos].getKey() > Heap[leftChild(pos)].getKey() || Heap[pos]
+//                .getKey() > Heap[rightChild(pos)].getKey()) {
+//
+//                // Swap with the left child and heapify
+//                // the left child
+//                if (Heap[leftChild(pos)].getKey() < Heap[rightChild(pos)]
+//                    .getKey()) {
+//                    swap(pos, leftChild(pos));
+//                    minHeapify(leftChild(pos));
+//                }
+//
+//                // Swap with the right child and heapify
+//                // the right child
+//                else {
+//                    swap(pos, rightChild(pos));
+//                    minHeapify(rightChild(pos));
+//                }
+//            }
+            
         }
     }
 
@@ -164,27 +200,143 @@ public class MinHeapRecord {
     }
 
 
-    // Driver code
-    public static void main(String[] arg) {
-        System.out.println("The Min Heap is ");
-        MinHeap minHeap = new MinHeap(15);
-        minHeap.insert(5);
-        minHeap.insert(3);
-        minHeap.insert(17);
-        minHeap.insert(10);
-        minHeap.insert(84);
-        minHeap.insert(19);
-        minHeap.insert(6);
-        minHeap.insert(22);
-        minHeap.insert(9);
-        minHeap.minHeap();
+    // MY CODE
 
-        minHeap.print();
-        System.out.println("The Min val is " + minHeap.remove());
+
+    // merge stuff
+    /**
+     * inserting element for merging location is location of the run
+     * 
+     * @param element
+     * @param location
+     * @return
+     */
+    public boolean insertRegular(Record element, int location) {
+        if (size < maxsize) {
+            int insertloc = (512 * location) + 1;
+            int insertlocpos = this.findEmptySpot(insertloc);
+            Heap[insertlocpos] = element;
+            size++;
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 
 
-    // MY CODE
+    private int findEmptySpot(int startpos) {
+        int end = startpos + 512;
+        int poscount = startpos;
+        while (poscount < end) {
+            if (Heap[poscount] == null || Heap[poscount].getKey() == 0) {
+                return poscount;
+            }
+            poscount++;
+        }
+        if (poscount == end) {
+            return -1;
+        }
+        return -1;
+
+    }
+
+
+    public boolean isRunEmpty(int runnum) {
+        int end = runnum * 512 + 513;
+        int poscount = runnum * 512 + 1;
+        while (poscount < end) {
+            if (Heap[poscount].getKey() == 0) {
+                poscount++;
+            }
+            else {
+                return false;
+            }
+        }
+        if (poscount == end) {
+            return true;
+        }
+        return false;
+    }
+
+
+    /**
+     * finding the min value of x number of runs loaded, removing and return the
+     * record
+     * what if run is empty
+     * 
+     * @param runstosearch
+     * @return
+     */
+    public Record runsMin(int runstosearch) {
+        int[] recordlocs = new int[runstosearch];
+        Record[] records = new Record[runstosearch];
+        int first = -1;
+        int i = 0;
+        // building location of records and records to compare
+        while (i < runstosearch) {
+            if (!this.isRunEmpty(i)) {
+                if(first == -1) {
+                    first = i;
+                }
+                recordlocs[i] = this.runCurrPos(i);
+                records[i] = Heap[this.runCurrPos(i)];
+            }
+            else {
+                recordlocs[i] = -1;
+            }
+            i++;
+        }
+        //finding minimum
+        double minval = records[first].getKey();
+        int minpos = first;
+        i = 0;
+        while (i < runstosearch) {
+            if (recordlocs[i] != -1) {
+                if(Double.compare(minval, Heap[recordlocs[i]].getKey())>0) {
+                    minval = records[i].getKey();
+                    minpos = i;
+                }
+            }
+            i++;
+        }
+        if(minpos != -1) {
+            size--;
+            Record temp = Heap[recordlocs[minpos]];
+            Heap[recordlocs[minpos]] = new Record(0, 0);
+            return temp;
+        }
+        else {
+            return null;
+        }       
+    }
+
+
+    /**
+     * current position in the run
+     * 
+     * @param run
+     * @return
+     */
+    public int runCurrPos(int run) {
+        int end = run * 512 + 513;
+        int poscount = run * 512 + 1;
+        while (poscount < end) {
+            if (Heap[poscount].getKey() != 0) {
+                return poscount;
+            }
+            poscount++;
+        }
+        if (poscount == end) {
+            return run * 512 + 1;
+        }
+        return -1;
+
+    }
+
+
+    // runs stuff
+
     public boolean specialInsert(Record element) {
         if (specialinsert > size && specialinsert > 0) {
             // Record temp = Heap[specialinsert];
@@ -198,8 +350,32 @@ public class MinHeapRecord {
         }
 
     }
+    
+    // used to reorder the heap, removes record as specific position
+    public Record removeSpecial(int pos) {
+        Record popped = Heap[pos];  
+        Heap[pos] = new Record(0, 0);
+        realsize--;
+        //minHeapify(FRONT);
+        return popped;
+    }
 
-
+     //used when reordering the array
+    public boolean insertReorder(Record element) {
+        if (size < maxsize) {
+            Heap[++size] = element;
+            int current = size;
+            realsize++;
+            while (Heap[current].getKey() < Heap[parent(current)].getKey()) {
+                swap(current, parent(current));
+                current = parent(current);
+            }
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
     public Record[] mainHeap() {
         return Heap;
     }
@@ -233,9 +409,12 @@ public class MinHeapRecord {
     public void setSpecialInsert(int x) {
         specialinsert = x;
     }
+
+
     public void setRealSize(int x) {
         realsize = x;
     }
+    
 
 
     public int realsize() {
