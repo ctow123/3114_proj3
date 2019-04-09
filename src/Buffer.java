@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -57,7 +58,9 @@ public class Buffer {
         //fw.close();
         front = 1;
         outputStream.close();
-
+//        RandomAccessFile dat= new RandomAccessFile(outputFile, "r");
+//        System.out.println("buf dump " + dat.length());
+//        dat.close();
     }
 
 

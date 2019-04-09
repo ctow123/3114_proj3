@@ -58,7 +58,7 @@ public class MinHeapRecordTest extends TestCase {
             .01);
         assertEquals(30, minheap.mainHeap()[minheap.rightChild(1)].getKey(),
             .01);
-        minheap.print();
+        //minheap.print();
         assertEquals(2, minheap.parent(5));
         assertEquals(2, minheap.parent(4));
         assertEquals(4, minheap.leftChild(2));
