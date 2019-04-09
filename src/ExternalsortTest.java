@@ -1,15 +1,14 @@
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import student.TestCase;
 
+/**
+ * tests the methods of Externalsort
+ * 
+ * @version 1.0 - using git so the versions are stored there
+ * @author connor
+ *
+ */
 public class ExternalsortTest extends TestCase {
-    private RandomAccessFile data;
-    Externalsort sorter = new Externalsort("sampleInput16test.bin");
-
-    Buffer inputbuf = new Buffer(512);
-    Buffer outputbuf = new Buffer(512);
-    MinHeapRecord heaparray = new MinHeapRecord(4096);
 
     private MinHeapRecord minheap;
 
@@ -17,16 +16,23 @@ public class ExternalsortTest extends TestCase {
     /**
      * Setup variables for the test methods
      * 
-     * @throws FileNotFoundException
+     * @throws IOException
      */
-    public void setUp() throws FileNotFoundException {
+    public void setUp() throws IOException {
         minheap = new MinHeapRecord(10);
-        data = new RandomAccessFile("sampleInput16test.bin", "r");
+        // Externalsort sortingobj = new Externalsort();
+        Externalsort.main(new String[] { "testing" });
+
     }
 
 
+    /**
+     * test the external sort did sort something
+     */
     public void testBasic() {
-
+        MinHeapRecord minheap2 = Externalsort.getHeap();
+        assertNotNull(minheap2);
+        assertEquals(0, minheap2.size());
     }
 
 
@@ -49,6 +55,9 @@ public class ExternalsortTest extends TestCase {
     }
 
 
+    /**
+     * tests basic sorting operations with the heap
+     */
     public void testHeap() {
         int i = 0;
         while (i < 10) {
@@ -63,19 +72,21 @@ public class ExternalsortTest extends TestCase {
         assertTrue(minheap.isFull());
     }
 
-
-    public void testMin() throws IOException {
-        Externalsort.initialHeapFill(heaparray);
-        Externalsort.fillBuffer(0, inputbuf);
-        inputbuf.getRecord();
-        inputbuf.getRecord();
-        inputbuf.insert(new Record(Integer.MIN_VALUE, Integer.MIN_VALUE));
-        inputbuf.insert(new Record(Integer.MIN_VALUE, Integer.MIN_VALUE));
-        Externalsort.buildRuns(inputbuf, outputbuf, heaparray);
-        int[] marray = { 0, 6651, 8192 };
-        int[] mcopy = { 0, 6651, 8192 };
-         Externalsort.mergeRuns(inputbuf,outputbuf,heaparray,marray,mcopy,1,"runs.bin","tester.bin");
-        assertEquals(0, inputbuf.getSize());
-
-    }
+// public void testMin() throws IOException {
+// Externalsort.initialHeapFill(heaparray);
+// Externalsort.fillBuffer(0, inputbuf);
+// inputbuf.getRecord();
+// inputbuf.getRecord();
+// inputbuf.insert(new Record(Integer.MIN_VALUE, Integer.MIN_VALUE));
+// inputbuf.insert(new Record(Integer.MIN_VALUE, Integer.MIN_VALUE));
+// Externalsort.buildRuns(inputbuf, outputbuf, heaparray);
+// int[] marray = { 0, 6651, 8192 };
+// int[] mcopy = { 0, 6651, 8192 };
+// Externalsort.mergeRuns(inputbuf, outputbuf, heaparray, marray, mcopy, 1,
+// "runs.bin", "tester.bin");
+// assertEquals(0, inputbuf.getSize());
+// // data.close();
+//
+// }
+//
 }

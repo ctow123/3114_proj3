@@ -1,5 +1,12 @@
 import student.TestCase;
 
+/**
+ * tests the methods of Minheap class
+ * 
+ * @version 1.0 - using git so the versions are stored there
+ * @author connor
+ *
+ */
 public class MinHeapRecordTest extends TestCase {
     private MinHeapRecord minheap;
     private MinHeapRecord minheap4096;
@@ -25,6 +32,9 @@ public class MinHeapRecordTest extends TestCase {
     }
 
 
+    /**
+     * tests the setup fields
+     */
     public void testFields() {
         assertEquals(0, minheap.size());
         assertEquals(0, minheap.realsize());
@@ -58,7 +68,7 @@ public class MinHeapRecordTest extends TestCase {
             .01);
         assertEquals(30, minheap.mainHeap()[minheap.rightChild(1)].getKey(),
             .01);
-        //minheap.print();
+        // minheap.print();
         assertEquals(2, minheap.parent(5));
         assertEquals(2, minheap.parent(4));
         assertEquals(4, minheap.leftChild(2));
@@ -68,6 +78,7 @@ public class MinHeapRecordTest extends TestCase {
         assertEquals(9, minheap.size());
         assertEquals(9, minheap.realsize());
         assertEquals(20, minheap.remove().getKey(), .1);
+        minheap.remove();
 
     }
 
@@ -76,10 +87,11 @@ public class MinHeapRecordTest extends TestCase {
      * specialInsert, removeSpecial, insertReorder
      */
     public void testRunOps() {
-        //specialinsert
-        int i =0;
-        while(i < 5) {
-            minheap.specialInsert(new Record(i,i));
+        // specialinsert
+        assertNull(minheap.peek());
+        int i = 0;
+        while (i < 5) {
+            minheap.specialInsert(new Record(i, i));
             i++;
         }
         assertEquals(0, minheap.size());
@@ -87,47 +99,48 @@ public class MinHeapRecordTest extends TestCase {
         assertEquals(10, minheap.maxsize());
         assertEquals(5, minheap.getSpecialInsert());
         assertFalse(minheap.isFull());
-        minheap.insert(record1);    
+        minheap.insert(record1);
         assertEquals(1, minheap.size());
         assertEquals(6, minheap.realsize());
         assertEquals(10, minheap.maxsize());
         assertEquals(5, minheap.getSpecialInsert());
         assertFalse(minheap.isFull());
-        i =0;
-        while(i < 4) {
-            minheap.specialInsert(new Record(i+5,i+5));
+        i = 0;
+        while (i < 4) {
+            minheap.specialInsert(new Record(i + 5, i + 5));
             i++;
         }
-        assertFalse(minheap.specialInsert(new Record(90,90)));
-        //removespecial
-        assertEquals(0,minheap.removeSpecial(10).getKey(), .1);
+        assertFalse(minheap.specialInsert(new Record(90, 90)));
+        // removespecial
+        assertEquals(0, minheap.removeSpecial(10).getKey(), .1);
         assertEquals(1, minheap.size());
         assertEquals(9, minheap.realsize());
         assertEquals(10, minheap.maxsize());
         assertEquals(1, minheap.getSpecialInsert());
         assertFalse(minheap.isFull());
-        
-        //insertReorder
+
+        // insertReorder
         minheap.insertReorder(minheap.remove());
         assertEquals(1, minheap.size());
         assertEquals(9, minheap.realsize());
     }
 
-/**
- * insertRegular, isRunEmpty, findEmptySpot, runsMin, runCurrPos
- */
+
+    /**
+     * insertRegular, isRunEmpty, findEmptySpot, runsMin, runCurrPos
+     */
     public void testMergeOps() {
-       //insertRegular
-        
-        int i =0;
-        while(i < 5) {
-            minheap4096.insertRegular(new Record(i+1,i+1),0);
+        // insertRegular
+
+        int i = 0;
+        while (i < 5) {
+            minheap4096.insertRegular(new Record(i + 1, i + 1), 0);
             i++;
         }
-        assertTrue(minheap4096.insertRegular(record1,1));
-        minheap4096.insertRegular(record2,2);
-        minheap4096.insertRegular(record3,3);
-        minheap4096.insertRegular(record4,4);
+        assertTrue(minheap4096.insertRegular(record1, 1));
+        minheap4096.insertRegular(record2, 2);
+        minheap4096.insertRegular(record3, 3);
+        minheap4096.insertRegular(record4, 4);
         assertEquals(9, minheap4096.size());
         assertFalse(minheap4096.isRunEmpty(0));
         assertFalse(minheap4096.isRunEmpty(1));
@@ -137,21 +150,45 @@ public class MinHeapRecordTest extends TestCase {
         assertTrue(minheap4096.isRunEmpty(5));
         assertTrue(minheap4096.isRunEmpty(6));
         assertTrue(minheap4096.isRunEmpty(7));
-        
-        
+
         // find empty spot & runCurrPos
-        assertEquals(6,minheap4096.findEmptySpot(1));
-        assertEquals(514,minheap4096.findEmptySpot(513));
-        assertEquals(1026,minheap4096.findEmptySpot(1025));
-        assertEquals(2561,minheap4096.findEmptySpot(2561));
-        
-        assertEquals(1,minheap4096.runCurrPos(0));
-        assertEquals(513,minheap4096.runCurrPos(1));
-        assertEquals(1025,minheap4096.runCurrPos(2));
-        
-        
-        //runsMin
-        
-        assertEquals(1,minheap4096.runsMin(8).getKey(),.1);
+        assertEquals(6, minheap4096.findEmptySpot(1));
+        assertEquals(514, minheap4096.findEmptySpot(513));
+        assertEquals(1026, minheap4096.findEmptySpot(1025));
+        assertEquals(2561, minheap4096.findEmptySpot(2561));
+
+        assertEquals(1, minheap4096.runCurrPos(0));
+        assertEquals(513, minheap4096.runCurrPos(1));
+        assertEquals(1025, minheap4096.runCurrPos(2));
+
+        // runsMin
+
+        assertEquals(1, minheap4096.runsMin(8).getKey(), .1);
+    }
+
+
+    /**
+     * tests merge operations more heavily
+     */
+    public void testMergeOps2() {
+        int i = 0;
+        while (i < 512) {
+            minheap4096.insertRegular(new Record(i + 1, i + 1), 0);
+            i++;
+        }
+        minheap4096.removeSpecial(1);
+        assertEquals(2, minheap4096.runCurrPos(0));
+
+        // assertEquals(513,minheap4096.runCurrPos(1));
+        // assertEquals(1025,minheap4096.runCurrPos(2));
+
+        // tests minifyheap
+        assertTrue(minheap.insert(record1));
+        assertTrue(minheap.insert(record2));
+        assertTrue(minheap.insert(record3));
+        minheap.remove();
+        assertTrue(minheap.insert(record4));
+        minheap.insertReorder(minheap.remove());
+        assertEquals(3, minheap.size());
     }
 }

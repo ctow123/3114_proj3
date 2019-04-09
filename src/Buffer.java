@@ -1,40 +1,52 @@
 import java.io.BufferedOutputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.util.*;
 
+/**
+ * represents a buffer that stores 1 block (8192bytes) or 512 records, each
+ * record being 16 bytes
+ * 
+ * @version 1.0 - using git so the versions are stored there
+ * @author connor
+ *
+ */
 public class Buffer {
     private Record[] buf;
     private int size;
     private int maxsize;
-    private int specialinsert;
     private int front;
 
 
+    /**
+     * constructor for buffer
+     * 
+     * @param size
+     *            size of the buffer
+     */
     public Buffer(int size) {
         this.front = 1;
         this.maxsize = size;
         this.size = 0;
-        this.specialinsert = maxsize;
         buf = new Record[this.maxsize + 1];
         buf[0] = new Record(Integer.MIN_VALUE, Integer.MIN_VALUE);
     }
 
 
     /**
-     * dumps buffer to an output file when full
+     * dumps the contents in bytes of the buffer to an output file
      * 
+     * @param outputtxt
+     *            textfile for debugging purposes
+     * @param outputFile
+     *            the binary file
      * @throws IOException
      */
-    public void dumpBuffer(String outputtxt, String outputFile) throws IOException {
+    public void dumpBuffer(String outputtxt, String outputFile)
+        throws IOException {
         // PrintWriter pw = new PrintWriter("output.txt");
-        //FileWriter fw = new FileWriter(outputtxt, true);
+        // FileWriter fw = new FileWriter(outputtxt, true);
         // PrintWriter pw = new PrintWriter("output.txt", teu);
 
         // bits output
@@ -44,9 +56,9 @@ public class Buffer {
         Record temp;
         while (!this.isEmpty()) {
             temp = this.getRecordFront();
-            //fw.append(Long.toString(temp.getID()) + " ");
-            //fw.append(Double.toString(temp.getKey()));
-            //fw.append("\n");
+            // fw.append(Long.toString(temp.getID()) + " ");
+            // fw.append(Double.toString(temp.getKey()));
+            // fw.append("\n");
             // bits output
             byte[] bytes = new byte[8];
             byte[] bytes2 = new byte[8];
@@ -55,35 +67,40 @@ public class Buffer {
             outputStream.write(bytes);
             outputStream.write(bytes2);
         }
-        //fw.close();
+        // fw.close();
         front = 1;
         outputStream.close();
-//        RandomAccessFile dat= new RandomAccessFile(outputFile, "r");
-//        System.out.println("buf dump " + dat.length());
-//        dat.close();
+// RandomAccessFile dat= new RandomAccessFile(outputFile, "r");
+// System.out.println("buf dump " + dat.length());
+// dat.close();
     }
 
 
+    /**
+     * 
+     * @return true if the buffer is full false otherwise
+     */
     public boolean isFull() {
-        if (size < maxsize) {
-            return false;
-        }
-        else {
-            return true;
-        }
+        return size >= maxsize;
+
     }
 
 
+    /**
+     * 
+     * @return true if the buffer is empty false otherwise
+     */
     public boolean isEmpty() {
-        if (size == 0) {
-            return true;
-        }
-        else {
-            return false;
-        }
+        return (size == 0);
     }
 
 
+    /**
+     * inserts record into the buffer
+     * 
+     * @param record
+     *            record to insert
+     */
     public void insert(Record record) {
         if (!this.isFull()) {
             buf[++size] = record;
@@ -91,6 +108,10 @@ public class Buffer {
     }
 
 
+    /**
+     * 
+     * @return size of the buffer
+     */
     public int getSize() {
         return size;
     }
@@ -115,6 +136,7 @@ public class Buffer {
 
 
     /**
+     * removes and returns the record at the front of the array, used in merging
      * 
      * @return the record at the front of the array
      */

@@ -1,6 +1,13 @@
 import java.io.IOException;
 import student.TestCase;
 
+/**
+ * tests the methods of the buffer class
+ * 
+ * @version 1.0 - using git so the versions are stored there
+ * @author connor
+ *
+ */
 public class BufferTest extends TestCase {
     private Buffer buff;
 
@@ -13,6 +20,9 @@ public class BufferTest extends TestCase {
     }
 
 
+    /**
+     * tests fields are set up correctly
+     */
     public void testFields() {
         assertEquals(0, buff.getSize());
         assertTrue(buff.isEmpty());
@@ -22,7 +32,7 @@ public class BufferTest extends TestCase {
 
 
     /**
-     * insert, getRecord, getRecordFront, Peek
+     * tests the methods insert, getRecord, getRecordFront, Peek
      */
     public void testMethods() {
         // test nulls
@@ -45,22 +55,25 @@ public class BufferTest extends TestCase {
         assertEquals(buff.peek(), buff.getRecord());
         assertEquals(9, buff.getSize());
         // test getRecordFront
-        assertEquals(0, buff.getRecordFront().getKey(),.1);
+        assertEquals(0, buff.getRecordFront().getKey(), .1);
         assertEquals(8, buff.getSize());
-        assertEquals(1, buff.getRecordFront().getKey(),.1);
-        assertEquals(2, buff.getRecordFront().getKey(),.1);
+        assertEquals(1, buff.getRecordFront().getKey(), .1);
+        assertEquals(2, buff.getRecordFront().getKey(), .1);
         assertEquals(6, buff.getSize());
     }
 
 
+    /**
+     * tests the dump function
+     */
     public void testDump() {
-        
+
         int i = 0;
         while (i < 10) {
             buff.insert(new Record(i, i));
             i++;
         }
-        //pre dump
+        // pre dump
         assertNotNull(buff.peek());
         assertEquals(10, buff.getSize());
         assertFalse(buff.isEmpty());
